@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Text;
@@ -13,6 +13,17 @@ namespace test1
 {
     class Program
     {
+        static void show(MySqlCommand command)
+        {
+            MySqlDataReader reader1 = command.ExecuteReader();
+
+            while (reader1.Read())
+            {
+                Console.WriteLine(reader1[0].ToString() + " " + reader1[1].ToString());
+            }
+            reader1.Close();
+        }
+
         static void Main(string[] args)
         {
             int i = 0; // iterator
@@ -34,25 +45,48 @@ namespace test1
             while ( reader.Read() )
             {
                 i++;
-                Console.WriteLine(reader[0].ToString() + " " + reader[1].ToString());
+                //Console.WriteLine(reader[0].ToString() + " " + reader[1].ToString());
             }
             reader.Close();
 
             // get ping
 
-            Ping ping = new Ping();
-            PingReply reply = ping.Send("www.google.com");
-            if (reply.Status == IPStatus.Success)
+
+            
+            Console.Write("enter the number of checks: ");
+            string readN = Console.ReadLine();
+            int N = Convert.ToInt32(readN);
+
+            Console.Write("enter check period (ms): ");
+            string readPeriod = Console.ReadLine();
+            int Period = Convert.ToInt32(readPeriod);
+
+            Console.Write("enter url (default \"www.google.com\"): ");
+            string url = Console.ReadLine();
+            if (url == "")
+                url = "www.google.com";
+
+
+            for (int j = 0; j < N; j++)
             {
-                Console.WriteLine($"time: {reply.RoundtripTime}");
-                i++;
-                string query = $"INSERT INTO pings (id, Ping) VALUES ({i} , {reply.RoundtripTime})";
+                Thread.Sleep(Period);
+                Ping ping = new Ping();
+                PingReply reply = ping.Send(url);
+                if (reply.Status == IPStatus.Success)
+                {
+                    Console.WriteLine($"time: {reply.RoundtripTime}");
+                    i++;
+                    string query = $"INSERT INTO pings (id, Ping) VALUES ({i} , {reply.RoundtripTime})";
 
-                MySqlCommand insertCommand = new MySqlCommand(query, connection);
+                    MySqlCommand insertCommand = new MySqlCommand(query, connection);
 
-                insertCommand.ExecuteNonQuery();
+                    insertCommand.ExecuteNonQuery();
 
+                }
             }
+
+            show(command);
+
             Console.ReadLine();
 
             connection.Close();
