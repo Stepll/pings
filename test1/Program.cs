@@ -11,62 +11,50 @@ using MySql.Data.MySqlClient;
 
 namespace test1
 {
-    class Program
+
+    class CheckPing
     {
-        static void show(MySqlCommand command)
+        private MySqlConnection connection;
+        MySqlCommand SelectCommand;
+        private int i = 0; // iteretor
+        private int N, Period;
+        private string url;
+
+        public CheckPing(int N, int Period, string url)
         {
-            MySqlDataReader reader1 = command.ExecuteReader();
+            this.N = N;
+            this.Period = Period;
+            this.url = url;
 
-            while (reader1.Read())
-            {
-                Console.WriteLine(reader1[0].ToString() + " " + reader1[1].ToString());
-            }
-            reader1.Close();
-        }
-
-        static void Main(string[] args)
-        {
-            int i = 0; // iterator
-
-            // sql
-
-            string connectstr = "server=localhost;user=root;database=pings;password=1234567895;";
-
-            MySqlConnection connection = new MySqlConnection(connectstr);
+            connection = new MySqlConnection("server=localhost;user=root;database=pings;password=1234567895;");
 
             connection.Open();
 
-            string sql = "SELECT id, Ping FROM pings";
+            SelectCommand = new MySqlCommand("SELECT id, Ping FROM pings", connection);
 
-            MySqlCommand command = new MySqlCommand(sql, connection);
+            MySqlDataReader reader = SelectCommand.ExecuteReader();
 
-            MySqlDataReader reader = command.ExecuteReader();
-
-            while ( reader.Read() )
+            while (reader.Read())
             {
                 i++;
-                //Console.WriteLine(reader[0].ToString() + " " + reader[1].ToString());
+                //Console.WriteLine(reader[0].ToString() + " " + reader[1].ToString()); // current database
             }
             reader.Close();
+        }
 
-            // get ping
+        public void show()
+        {
+            MySqlDataReader reader = SelectCommand.ExecuteReader();
 
+            while (reader.Read())
+            {
+                Console.WriteLine(reader[0].ToString() + " " + reader[1].ToString());
+            }
+            reader.Close();
+        }
 
-            
-            Console.Write("enter the number of checks: ");
-            string readN = Console.ReadLine();
-            int N = Convert.ToInt32(readN);
-
-            Console.Write("enter check period (ms): ");
-            string readPeriod = Console.ReadLine();
-            int Period = Convert.ToInt32(readPeriod);
-
-            Console.Write("enter url (default \"www.google.com\"): ");
-            string url = Console.ReadLine();
-            if (url == "")
-                url = "www.google.com";
-
-
+        public void run()
+        {
             for (int j = 0; j < N; j++)
             {
                 Thread.Sleep(Period);
@@ -81,15 +69,39 @@ namespace test1
                     MySqlCommand insertCommand = new MySqlCommand(query, connection);
 
                     insertCommand.ExecuteNonQuery();
-
                 }
             }
+        }
 
-            show(command);
+        ~CheckPing()
+        {
+            connection.Close();
+        }
+
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            Console.Write("enter the number of checks: ");
+            string readN = Console.ReadLine();
+            int N = Convert.ToInt32(readN);
+
+            Console.Write("enter check period (ms): ");
+            string readPeriod = Console.ReadLine();
+            int Period = Convert.ToInt32(readPeriod);
+
+            Console.Write("enter url (default \"www.google.com\"): ");
+            string url = Console.ReadLine();
+            if (url == "")
+                url = "www.google.com";
+
+            CheckPing Exemple = new CheckPing(N, Period, url);
+            Exemple.run();
+            Exemple.show();
 
             Console.ReadLine();
-
-            connection.Close();
         }
     }
 }
